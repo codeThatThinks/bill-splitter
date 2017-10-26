@@ -244,8 +244,6 @@ function toggle_item_opt_out(e)
 
 function update_item_name(e)
 {
-    console.log(e);
-
     var receipt_id = $(this).parent().parent().parent().attr('class').match(/receipt-\d+/g)[0].match(/\d+/g)[0];
     var item_id = $(this).parent().parent().parent().attr('class').match(/item-\d+/g)[0].match(/\d+/g)[0];
 
