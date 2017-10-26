@@ -40,6 +40,8 @@ var people = new Array();
 
 function add_person(e)
 {
+    e.preventDefault();
+
     $('#table .person-add-name').hide();
     $('#table .person-add-name input').off("focusout");
     $('#table .person-add-name').off("submit");
@@ -50,12 +52,12 @@ function add_person(e)
         people.push(new Person($('#table .person-add-name input').val()));
         update_table();
     }
-
-    e.preventDefault();
 }
 
 function delete_person(e)
 {
+    e.preventDefault();
+
     var id = $(this).parent().attr('class').match(/\d+/g)[0];
 
     for(var i = 0; i < people.length; i++)
@@ -65,12 +67,12 @@ function delete_person(e)
     }
 
     update_table();
-
-    e.preventDefault();
 }
 
 function add_receipt(e)
 {
+    e.preventDefault();
+
     $('#table .receipt-add-name').hide();
     $('#table .receipt-add-name input').off("focusout");
     $('#table .receipt-add-name').off("submit");
@@ -83,12 +85,12 @@ function add_receipt(e)
         receipts.push(r);
         update_table();
     }
-
-    e.preventDefault();
 }
 
 function delete_receipt(e)
 {
+    e.preventDefault();
+
     var id = $(this).parent().parent().attr('class').match(/\d+/g)[0];
     for(var i = 0; i < receipts.length; i++)
     {
@@ -114,15 +116,15 @@ function delete_receipt(e)
     }
 
     update_table();
-
-    e.preventDefault();
 }
 
 function update_receipt_tax(e)
 {
+    e.preventDefault();
+
     if(!Number.isNaN(parseFloat($(this).val().valueOf())))
     {
-        var id = $(this).parent().parent().attr('class').match(/\d+/g)[0];
+        var id = $(this).parent().parent().parent().attr('class').match(/\d+/g)[0];
 
         for(var i = 0; i < receipts.length; i++)
         {
@@ -134,15 +136,12 @@ function update_receipt_tax(e)
     }
 
     update_table();
-
-    if(e.type == 'submit')
-    {
-        e.preventDefault();
-    }
 }
 
 function add_item(e)
 {
+    e.preventDefault();
+
     var id = $(this).parent().parent().parent().attr('class').match(/\d+/g)[0];
 
     for(var i = 0; i < receipts.length; i++)
@@ -154,12 +153,12 @@ function add_item(e)
     }
 
     update_table();
-
-    e.preventDefault();
 }
 
 function delete_item(e)
 {
+    e.preventDefault();
+
     var receipt_id = $(this).parent().parent().attr('class').match(/receipt-\d+/g)[0].match(/\d+/g)[0];
     var item_id = $(this).parent().parent().attr('class').match(/item-\d+/g)[0].match(/\d+/g)[0];
 
@@ -185,12 +184,12 @@ function delete_item(e)
     }
 
     update_table();
-
-    e.preventDefault();
 }
 
 function toggle_item_taxed(e)
 {
+    e.preventDefault();
+
     var receipt_id = $(this).parent().parent().attr('class').match(/receipt-\d+/g)[0].match(/\d+/g)[0];
     var item_id = $(this).parent().parent().attr('class').match(/item-\d+/g)[0].match(/\d+/g)[0];
 
@@ -209,12 +208,12 @@ function toggle_item_taxed(e)
     }
 
     update_table();
-
-    e.preventDefault();
 }
 
 function toggle_item_opt_out(e)
 {
+    e.preventDefault();
+
     var receipt_id = $(this).parent().parent().attr('class').match(/receipt-\d+/g)[0].match(/\d+/g)[0];
     var item_id = $(this).parent().parent().attr('class').match(/item-\d+/g)[0].match(/\d+/g)[0];
     var person_id = $(this).parent().attr('class').match(/\d+/g)[0];
@@ -261,12 +260,12 @@ function toggle_item_opt_out(e)
     }
 
     update_table();
-
-    e.preventDefault();
 }
 
 function update_item_name(e)
 {
+    e.preventDefault();
+
     var receipt_id = $(this).parent().parent().parent().attr('class').match(/receipt-\d+/g)[0].match(/\d+/g)[0];
     var item_id = $(this).parent().parent().parent().attr('class').match(/item-\d+/g)[0].match(/\d+/g)[0];
 
@@ -284,16 +283,13 @@ function update_item_name(e)
         }
     }
 
-    update_table();
-
-    if(e.type == 'submit')
-    {
-        e.preventDefault();
-    }
+   update_table();
 }
 
 function update_item_price(e)
 {
+    e.preventDefault();
+
     if(!Number.isNaN(parseFloat($(this).val().valueOf())))
     {
         var receipt_id = $(this).parent().parent().parent().attr('class').match(/receipt-\d+/g)[0].match(/\d+/g)[0];
@@ -315,11 +311,6 @@ function update_item_price(e)
     }
 
     update_table();
-
-    if(e.type == 'submit')
-    {
-        e.preventDefault();
-    }
 }
 
 function calc_totals(person)
@@ -451,7 +442,7 @@ function update_table()
         }
 
         // receipt tax
-        $('#table tbody tr:last-child').before('<tr class="receipt receipt-' + receipts[i].id + '"><td><div class="float-left"><button type="button" class="btn item-add">Add Item</button></div><div class="float-right">Tax</div></td><td><input type="text" class="form-control receipt-tax" size="5" placeholder="0.00" value="' + receipts[i].tax.toFixed(2) + '"></td><td colspan="2" style="border-right: 2px solid #e9ecef"></td><td colspan="' + (people.length + 1) + '"></td></tr>');
+        $('#table tbody tr:last-child').before('<tr class="receipt receipt-' + receipts[i].id + '"><td><div class="float-left"><button type="button" class="btn item-add">Add Item</button></div><div class="float-right">Tax</div></td><td><form class="receipt-tax"><input type="text" class="form-control" size="5" placeholder="0.00" value="' + receipts[i].tax.toFixed(2) + '"></form></td><td colspan="2" style="border-right: 2px solid #e9ecef"></td><td colspan="' + (people.length + 1) + '"></td></tr>');
 
         // receipt subtotal
         $('#table tbody tr:last-child').before('<tr class="receipt receipt-' + receipts[i].id + '"><td class="text-right">Subtotal</td><td class="font-weight-bold">$' + receipts[i].total.toFixed(2) + '</td><td colspan="2" style="border-right: 2px solid #e9ecef"></td><td colspan="' + (people.length + 1) + '"></td></tr>');
@@ -465,26 +456,26 @@ function update_table()
 
 function show_person_name(e)
 {
+    e.preventDefault();
+
     $('#table .person-add').hide();
     $('#table .person-add-name input').val('');
     $('#table .person-add-name').show();
     $('#table .person-add-name input').focus();
     $('#table .person-add-name input').focusout(add_person);
     $('#table .person-add-name').submit(add_person);
-
-    e.preventDefault();
 }
 
 function show_receipt_name(e)
 {
+    e.preventDefault();
+
     $('#table .receipt-add').hide();
     $('#table .receipt-add-name input').val('');
     $('#table .receipt-add-name').show();
     $('#table .receipt-add-name input').focus();
     $('#table .receipt-add-name input').focusout(add_receipt);
     $('#table .receipt-add-name').submit(add_receipt);
-
-    e.preventDefault();
 }
 
 $(document).ready(function()
@@ -493,7 +484,8 @@ $(document).ready(function()
     $('#table').on('click', '.person-delete', delete_person);
     $('#table').on('click', '.receipt-add', show_receipt_name);
     $('#table').on('click', '.receipt-delete', delete_receipt);
-    $('#table').on('change', '.receipt-tax', update_receipt_tax);
+    $('#table').on('focusout', '.receipt-tax input', update_receipt_tax);
+    $('#table').on('submit', '.receipt-tax', update_receipt_tax);
     $('#table').on('click', '.item-add', add_item);
     $('#table').on('click', '.item-delete', delete_item);
     $('#table').on('change', '.item-taxed', toggle_item_taxed);
