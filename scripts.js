@@ -118,6 +118,29 @@ function delete_receipt(e)
     e.preventDefault();
 }
 
+function update_receipt_tax(e)
+{
+    if(!Number.isNaN(parseFloat($(this).val().valueOf())))
+    {
+        var id = $(this).parent().parent().attr('class').match(/\d+/g)[0];
+
+        for(var i = 0; i < receipts.length; i++)
+        {
+            if(receipts[i].id == id)
+            {
+                receipts[i].tax = parseFloat($(this).val());
+            }
+        }
+    }
+
+    update_table();
+
+    if(e.type == 'submit')
+    {
+        e.preventDefault();
+    }
+}
+
 function add_item(e)
 {
     var id = $(this).parent().parent().parent().attr('class').match(/\d+/g)[0];
@@ -365,7 +388,10 @@ function calc_totals(person)
             receipts[i].total += receipts[i].items[j].price;
         }
 
-        receipts[i].total += receipts[i].tax;
+        if(receipts[i].tax_rate != 0)
+        {
+            receipts[i].total += receipts[i].tax;
+        }
     }
 }
 
@@ -425,7 +451,7 @@ function update_table()
         }
 
         // receipt tax
-        $('#table tbody tr:last-child').before('<tr class="receipt receipt-' + receipts[i].id + '"><td><div class="float-left"><button type="button" class="btn item-add">Add Item</button></div><div class="float-right">Tax</div></td><td><input type="text" class="form-control" size="5" placeholder="0.00" value="' + receipts[i].tax + '"></td><td colspan="2" style="border-right: 2px solid #e9ecef"></td><td colspan="' + (people.length + 1) + '"></td></tr>');
+        $('#table tbody tr:last-child').before('<tr class="receipt receipt-' + receipts[i].id + '"><td><div class="float-left"><button type="button" class="btn item-add">Add Item</button></div><div class="float-right">Tax</div></td><td><input type="text" class="form-control receipt-tax" size="5" placeholder="0.00" value="' + receipts[i].tax.toFixed(2) + '"></td><td colspan="2" style="border-right: 2px solid #e9ecef"></td><td colspan="' + (people.length + 1) + '"></td></tr>');
 
         // receipt subtotal
         $('#table tbody tr:last-child').before('<tr class="receipt receipt-' + receipts[i].id + '"><td class="text-right">Subtotal</td><td class="font-weight-bold">$' + receipts[i].total.toFixed(2) + '</td><td colspan="2" style="border-right: 2px solid #e9ecef"></td><td colspan="' + (people.length + 1) + '"></td></tr>');
@@ -467,6 +493,7 @@ $(document).ready(function()
     $('#table').on('click', '.person-delete', delete_person);
     $('#table').on('click', '.receipt-add', show_receipt_name);
     $('#table').on('click', '.receipt-delete', delete_receipt);
+    $('#table').on('change', '.receipt-tax', update_receipt_tax);
     $('#table').on('click', '.item-add', add_item);
     $('#table').on('click', '.item-delete', delete_item);
     $('#table').on('change', '.item-taxed', toggle_item_taxed);
