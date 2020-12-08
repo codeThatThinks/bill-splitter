@@ -3,26 +3,29 @@ var receipt_count = 0;
 var person_count = 0;
 var item_count = 0;
 
-function Receipt(name, tax)
+var receipts = new Array();
+var people = new Array();
+
+function Receipt(name)
 {
     receipt_count++;
     this.id = receipt_count;
 
     this.name = name;
     this.items = new Array();
-    this.tax = tax;
-    this.tax_rate = 0;
+    this.subtotal = 0;
     this.total = 0;
+    this.invalid_total = false;
+    this.person_totals = new Array(people.length).fill(0);
 }
 
-function Item(name, price, taxed)
+function Item()
 {
     item_count++;
     this.id = item_count;
 
-    this.name = name;
-    this.price = price;
-    this.taxed = taxed;
+    this.name = '';
+    this.price = 0;
 }
 
 function Person(name)
@@ -34,9 +37,6 @@ function Person(name)
     this.opt_outs = new Array();
     this.total = 0;
 }
-
-var receipts = new Array();
-var people = new Array();
 
 function add_person(e)
 {
@@ -62,8 +62,11 @@ function delete_person(e)
 
     for(var i = 0; i < people.length; i++)
     {
-        if(people[i].id == id) people.splice(i, 1);
-
+        if(people[i].id == id)
+        {
+            people.splice(i, 1);
+            break;
+        }
     }
 
     update_table();
@@ -80,8 +83,8 @@ function add_receipt(e)
 
     if($('#table .receipt-add-name input').val() != '')
     {
-        var r = new Receipt($('#table .receipt-add-name input').val(), 0);
-        r.items.push(new Item('', 0, false));
+        var r = new Receipt($('#table .receipt-add-name input').val());
+        r.items.push(new Item());
         receipts.push(r);
         update_table();
     }
@@ -94,7 +97,11 @@ function delete_receipt(e)
     var id = $(this).parent().parent().attr('class').match(/\d+/g)[0];
     for(var i = 0; i < receipts.length; i++)
     {
-        if(receipts[i].id == id) var index = i;
+        if(receipts[i].id == id)
+        {
+            var index = i;
+            break;
+        }
     }
 
     // remove items in this receipt from opt_outs
@@ -102,9 +109,10 @@ function delete_receipt(e)
     {
         for(var j = 0; j < receipts[index].items.length; j++)
         {
-            if(people[i].opt_outs.indexOf(receipts[index].items[j]) != -1)
+            var opt_outs_index = people[i].opt_outs.indexOf(receipts[index].items[j])
+            if(opt_outs_index != -1)
             {
-                people[i].opt_outs.splice(people[i].opt_outs.indexOf(receipts[index].items[j]), 1);
+                people[i].opt_outs.splice(opt_outs_index, 1);
             }
         }
     }
@@ -112,13 +120,17 @@ function delete_receipt(e)
     // remove from receipts array
     for(var i = 0; i < receipts.length; i++)
     {
-        if(receipts[i].id == id) receipts.splice(i, 1);
+        if(receipts[i].id == id)
+        {
+            receipts.splice(i, 1);
+            break;
+        }
     }
 
     update_table();
 }
 
-function update_receipt_tax(e)
+function update_receipt_total(e)
 {
     e.preventDefault();
 
@@ -130,7 +142,7 @@ function update_receipt_tax(e)
         {
             if(receipts[i].id == id)
             {
-                receipts[i].tax = parseFloat($(this).val());
+                receipts[i].total = parseFloat($(this).val());
             }
         }
     }
@@ -148,7 +160,7 @@ function add_item(e)
     {
         if(receipts[i].id == id)
         {
-            receipts[i].items.push(new Item('', 0, false));
+            receipts[i].items.push(new Item());
         }
     }
 
@@ -167,7 +179,10 @@ function delete_item(e)
     {
         for(var j = 0; j < people[i].opt_outs.length; j++)
         {
-            if(people[i].opt_outs[j].id == item_id) people[i].opt_outs.splice(j, 1);
+            if(people[i].opt_outs[j].id == item_id)
+            {
+                people[i].opt_outs.splice(j, 1);
+            }
         }
     }
 
@@ -178,30 +193,9 @@ function delete_item(e)
         {
             for(var j = 0; j < receipts[i].items.length; j++)
             {
-                if(receipts[i].items[j].id == item_id) receipts[i].items.splice(j, 1);
-            }
-        }
-    }
-
-    update_table();
-}
-
-function toggle_item_taxed(e)
-{
-    e.preventDefault();
-
-    var receipt_id = $(this).parent().parent().attr('class').match(/receipt-\d+/g)[0].match(/\d+/g)[0];
-    var item_id = $(this).parent().parent().attr('class').match(/item-\d+/g)[0].match(/\d+/g)[0];
-
-    for(var i = 0; i < receipts.length; i++)
-    {
-        if(receipts[i].id == receipt_id)
-        {
-            for(var j = 0; j < receipts[i].items.length; j++)
-            {
                 if(receipts[i].items[j].id == item_id)
                 {
-                    receipts[i].items[j].taxed = !receipts[i].items[j].taxed;
+                    receipts[i].items.splice(j, 1);
                 }
             }
         }
@@ -313,41 +307,44 @@ function update_item_price(e)
     update_table();
 }
 
-function calc_totals(person)
+function calc_totals()
 {
-    // determine tax rate for each receipt
+    // calculate receipt subtotals
     for(var i = 0; i < receipts.length; i++)
     {
-        var taxed_amount = 0;
+        // reset receipt subtotal
+        receipts[i].subtotal = 0;
 
         for(var j = 0; j < receipts[i].items.length; j++)
         {
-            if(receipts[i].items[j].taxed) taxed_amount += receipts[i].items[j].price;
+            receipts[i].subtotal += receipts[i].items[j].price;
         }
 
-        if(taxed_amount == 0)
-        {
-            receipts[i].tax_rate = 0;
-        }
-        else
-        {
-            receipts[i].tax_rate = receipts[i].tax / taxed_amount;
-        }
+        // determine if receipt total is valid
+        receipts[i].invalid_total = (receipts[i].total < receipts[i].subtotal);
     }
 
     // reset all person totals
-    for(var i = 0; i < people.length; i++) people[i].total = 0;
+    for(var i = 0; i < people.length; i++)
+    {
+        people[i].total = 0;
+    }
 
     // calculate person totals item by item
     for(var i = 0; i < receipts.length; i++)
     {
+        receipts[i].person_totals = new Array(people.length).fill(0);
+
         for(var j = 0; j < receipts[i].items.length; j++)
         {
             // determine how many people are paying for it
             var num_people = 0;
             for(var k = 0; k < people.length; k++)
             {
-                if(people[k].opt_outs.indexOf(receipts[i].items[j]) == -1) num_people++;
+                if(people[k].opt_outs.indexOf(receipts[i].items[j]) == -1)
+                {
+                    num_people++;
+                }
             }
 
             // divide the price up and add it to everyone's total
@@ -355,33 +352,21 @@ function calc_totals(person)
             {
                 if(people[k].opt_outs.indexOf(receipts[i].items[j]) == -1)
                 {
-                    if(receipts[i].items[j].taxed)
-                    {
-                        people[k].total += (receipts[i].items[j].price + receipts[i].items[j].price * receipts[i].tax_rate) / num_people;
-                    }
-                    else
-                    {
-                        people[k].total += receipts[i].items[j].price / num_people;
-                    }
+                    receipts[i].person_totals[k] += receipts[i].items[j].price / num_people;
                 }
             }
         }
-    }
 
-    // calculate receipt totals
-    for(var i = 0; i < receipts.length; i++)
-    {
-        // reset receipt total
-        receipts[i].total = 0;
-
-        for(var j = 0; j < receipts[i].items.length; j++)
+        // add everyone's receipt total to their grand total
+        for(var j = 0; j < people.length; j++)
         {
-            receipts[i].total += receipts[i].items[j].price;
-        }
+            // determine everyone's actual total by distributing the total receipt price by individual proportion of the receipt
+            if(receipts[i].subtotal > 0 && !(receipts[i].invalid_total))
+            {
+                receipts[i].person_totals[j] = (receipts[i].person_totals[j] / receipts[i].subtotal) * receipts[i].total;
+            }
 
-        if(receipts[i].tax_rate != 0)
-        {
-            receipts[i].total += receipts[i].tax;
+            people[j].total += receipts[i].person_totals[j];
         }
     }
 }
@@ -397,7 +382,7 @@ function update_table()
     for(var i = 0; i < people.length; i++)
     {
         // table heading
-        $('#table thead tr td:last-child').before('<th class="text-center person person-' + people[i].id + '">' + people[i].name + '&nbsp;&nbsp;&nbsp;&nbsp;<button type="button" class="close float-none align-bottom person-delete">&times</button></th>');
+        $('#table thead tr td:last-child').before('<th class="text-center person person-' + people[i].id + '">' + people[i].name + '&nbsp;&nbsp;&nbsp;&nbsp;<button type="button" class="close float-none person-delete">&times</button></th>');
 
         // totals
         $('#table tbody tr:last-child td:last-child').before('<td class="text-center font-weight-bold person-total">$' + people[i].total.toFixed(2) + '</td>');
@@ -406,23 +391,14 @@ function update_table()
     for(var i = 0; i < receipts.length; i++)
     {
         // receipt name
-        $('#table tbody tr:last-child').before('<tr class="receipt receipt-' + receipts[i].id + '"><td colspan="4" style="border-right: 2px solid #e9ecef"><i>' + receipts[i].name + '</i>&nbsp;&nbsp;&nbsp;&nbsp;<button type="button" class="close float-none align-bottom receipt-delete">&times;</button></td><td colspan="' + (people.length + 1) + '"></td></tr>')
+        $('#table tbody tr:last-child').before('<tr class="receipt receipt-' + receipts[i].id + '"><td colspan="3" style="font-size: larger;border-right: 2px solid #e9ecef"><i>' + receipts[i].name + '</i>&nbsp;&nbsp;&nbsp;&nbsp;<button type="button" class="close float-none receipt-delete">&times;</button></td><td colspan="' + (people.length + 1) + '"></td></tr>')
 
         for(var j = 0; j < receipts[i].items.length; j++)
         {
             // receipt item
-            var tag = '<tr class="receipt receipt-' + receipts[i].id + ' item-' + receipts[i].items[j].id + '"><td><form class="item-name"><input type="text" placeholder="Item Name" class="form-control" value="' + receipts[i].items[j].name + '"></form></td><td><form class="item-price"><input type="text" placeholder="0.00" class="form-control" size="5" value="' + receipts[i].items[j].price.toFixed(2) + '"></form></td>';
+            var tag = '<tr class="receipt receipt-' + receipts[i].id + ' item-' + receipts[i].items[j].id + '"><td><form class="item-name"><input type="text" placeholder="Item Name" class="form-control" value="' + receipts[i].items[j].name + '"></form></td><td><form class="item-price"><input type="text" title="Item Price" placeholder="0.00" class="form-control" size="5" value="' + receipts[i].items[j].price.toFixed(2) + '"></form></td>';
 
-            if(receipts[i].items[j].taxed)
-            {
-                tag += '<td class="text-center"><input type="checkbox" class="form-check-input item-taxed" checked="checked"></td>';
-            }
-            else
-            {
-                tag += '<td class="text-center"><input type="checkbox" class="form-check-input item-taxed"></td>';
-            }
-
-            tag += '<td class="text-center" style="border-right: 2px solid #e9ecef"><button type="button" class="close float-none align-bottom item-delete"><span>&times;</span></button></td>';
+            tag += '<td class="text-center" style="border-right: 2px solid #e9ecef"><button type="button" class="close float-none item-delete"><span>&times;</span></button></td>';
 
             for(var k = 0; k < people.length; k++)
             {
@@ -441,11 +417,26 @@ function update_table()
             $('#table tbody tr:last-child').before(tag);
         }
 
-        // receipt tax
-        $('#table tbody tr:last-child').before('<tr class="receipt receipt-' + receipts[i].id + '"><td><div class="float-left"><button type="button" class="btn item-add">Add Item</button></div><div class="float-right">Tax</div></td><td><form class="receipt-tax"><input type="text" class="form-control" size="5" placeholder="0.00" value="' + receipts[i].tax.toFixed(2) + '"></form></td><td colspan="2" style="border-right: 2px solid #e9ecef"></td><td colspan="' + (people.length + 1) + '"></td></tr>');
-
         // receipt subtotal
-        $('#table tbody tr:last-child').before('<tr class="receipt receipt-' + receipts[i].id + '"><td class="text-right">Subtotal</td><td class="font-weight-bold">$' + receipts[i].total.toFixed(2) + '</td><td colspan="2" style="border-right: 2px solid #e9ecef"></td><td colspan="' + (people.length + 1) + '"></td></tr>');
+        $('#table tbody tr:last-child').before('<tr class="receipt receipt-' + receipts[i].id + '"><td class="clearfix"><div class="float-left"><button type="button" class="btn btn-light item-add">Add Item</button></div><div class="float-right">Receipt Subtotal</div></td><td class="font-weight-bold">$' + receipts[i].subtotal.toFixed(2) + '</td><td style="border-right: 2px solid #e9ecef"></td><td colspan="' + (people.length + 1) + '"></td></tr>');
+
+        // receipt total
+        if(receipts[i].invalid_total)
+        {
+            $('#table tbody tr:last-child').before('<tr class="receipt receipt-' + receipts[i].id + '"><td class="text-right">Receipt Total</td><td><form class="receipt-total"><input type="text" class="form-control is-invalid" size="5" title="Receipt total including taxes, etc." placeholder="0.00" value="' + receipts[i].total.toFixed(2) + '"><div class="invalid-feedback">Must be &ge; Subtotal.</div></form></td><td style="border-right: 2px solid #e9ecef"></td></tr>');
+        }
+        else
+        {
+            $('#table tbody tr:last-child').before('<tr class="receipt receipt-' + receipts[i].id + '"><td class="text-right">Receipt Total</td><td><form class="receipt-total"><input type="text" class="form-control" size="5" title="Receipt total including taxes, etc." placeholder="0.00" value="' + receipts[i].total.toFixed(2) + '"></form></td><td style="border-right: 2px solid #e9ecef"></td></tr>');
+        }
+
+        // individual totals
+        var receipt_total_row = $('#table tbody tr:nth-last-child(2)');
+        for(var j = 0; j < people.length; j++)
+        {
+            receipt_total_row.append('<td class="text-center">$' + receipts[i].person_totals[j].toFixed(2) + '</td>');
+        }
+        receipt_total_row.append('<td></td>');
     }
 
     // total
@@ -484,11 +475,10 @@ $(document).ready(function()
     $('#table').on('click', '.person-delete', delete_person);
     $('#table').on('click', '.receipt-add', show_receipt_name);
     $('#table').on('click', '.receipt-delete', delete_receipt);
-    $('#table').on('focusout', '.receipt-tax input', update_receipt_tax);
-    $('#table').on('submit', '.receipt-tax', update_receipt_tax);
+    $('#table').on('focusout', '.receipt-total input', update_receipt_total);
+    $('#table').on('submit', '.receipt-total', update_receipt_total);
     $('#table').on('click', '.item-add', add_item);
     $('#table').on('click', '.item-delete', delete_item);
-    $('#table').on('change', '.item-taxed', toggle_item_taxed);
     $('#table').on('change', '.item-opt-out', toggle_item_opt_out);
     $('#table').on('focusout', '.item-name input', update_item_name);
     $('#table').on('submit', '.item-name', update_item_name);

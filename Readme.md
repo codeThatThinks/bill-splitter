@@ -1,5 +1,7 @@
 # Bill Splitter
 
+__Live Demo: [bill-splitter.ianglen.me](https://bill-splitter.ianglen.me)__
+
 Figure out how much everyone owes after going to the store. Enter items on multiple receipts, allow people to opt-out of paying for some items, consider taxed items, and determine the final amount each person is responsible for.
 
 ![Screenshot](screenshot.jpg?raw=true)
